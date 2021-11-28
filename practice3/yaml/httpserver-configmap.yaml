@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: httpserver-conf
+data:
+  httpserver.yaml: |
+    server:
+      port: ":8080"

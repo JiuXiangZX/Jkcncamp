@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpserver
+  labels:
+    app: httpserver
+spec:
+  replicas: 3
+  template:
+    metadata:
+      name: httpserver
+      labels:
+        app: httpserver
+    spec:
+      containers:
+        - name: httpserver
+          image: docker.io/zhangxin666/httpserver:v0.0.2
+          imagePullPolicy: IfNotPresent
+          args:
+            - /bin/sh
+            - -c
+            - touch /tmp/healthy; sleep 30; rm -rf /tmp/healthy; sleep 600
+            - ./httpserver --config=/etc/httpserver/httpserver.yaml
+          volumeMounts:
+            - name: httpserver-config
+              mountPath: /etc/httpserver
+          livenessProbe:
+            exec:
+                command:
+                  - cat
+                  - /tmp/healthy
+            initialDelaySeconds: 10
+            periodSeconds: 8
+          resources:
+            limits:
+              cpu: 500m
+              memory: 200Mi
+            requests:
+              cpu: 500m
+              memory: 200Mi
+          lifecycle:
+            postStart:
+              exec:
+                command: [ "/bin/sh", "-c", "echo Hello from the postStart handler > /usr/share/message" ]
+            preStop:
+              exec:
+                command: [ "/bin/sh","-c","httpserver -s quit; while killall -0 httpserver; do sleep 1; done" ]
+      volumes:
+        - name: httpserver-config
+          configMap:
+            name: httpserver-conf
+      restartPolicy: Always
+  selector:
+    matchLabels:
+      app: httpserver
